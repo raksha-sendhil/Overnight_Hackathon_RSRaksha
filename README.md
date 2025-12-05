@@ -21,7 +21,7 @@ It relies only on browser interaction patterns to estimate a real-time risk scor
 2. Backend (Python + Flask)  
    - Receives event streams  
    - Extracts behavioral features  
-   - Runs a lightweight ML model (Logistic Regression + optional Isolation Forest)  
+   - Runs a lightweight ML model (Random Forest)  
    - Updates and returns a live risk score
 
 3. Dashboard (Streamlit)  
@@ -39,5 +39,5 @@ Browser events → Flask API (/api/events) → Feature extraction → ML scoring
 - scikit-learn (risk model)
 - Streamlit (proctor dashboard)
 
-## How to Run
-1. Install dependencies:
+video link:
+https://drive.google.com/file/d/1PKlBJu2witDwU1nAd_wV2XVP_WrJ3aOc/view?usp=sharing
