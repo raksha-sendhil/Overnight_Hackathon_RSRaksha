@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import joblib
 import random
@@ -23,48 +23,55 @@ FEATURE_COLUMNS = [
 ]
 
 # ============================================================
-#  SYNTHETIC DATASET GENERATION
+#  IMPROVED SYNTHETIC DATA GENERATOR
 # ============================================================
 
 def generate_sample(is_cheater):
     """
-    Create 1 synthetic feature row.
-    Patterns:
-      - cheaters have more paste/copy/right-click/tab-switch
-      - cheaters have lower IKI variance (bot-like)
-      - honest users have more natural key & mouse variety
+    Improved generator:
+      - more overlap
+      - more noise
+      - realistic variation
     """
+
+    # Paste / Copy / Right-click / Tab
+    paste = np.random.poisson(0.2 if not is_cheater else 1.2)
+    paste += np.random.binomial(3, 0.1 if not is_cheater else 0.3)
+
+    copy = np.random.poisson(0.3 if not is_cheater else 1.0)
+    right = np.random.poisson(0.2 if not is_cheater else 0.8)
+    tab = np.random.poisson(0.1 if not is_cheater else 1.0)
+
+    selection = np.random.poisson(1.5 if not is_cheater else 2.5)
+
+    # Mouse movement overlap
+    mouse = int(np.random.normal(110, 25))
     if is_cheater:
-        paste = np.random.poisson(2)
-        copy = np.random.poisson(1)
-        right = np.random.poisson(1)
-        tab = np.random.poisson(2)
-        selection = np.random.poisson(3)
+        mouse = int(np.random.normal(90, 30))
 
-        mouse = int(np.random.normal(80, 15))
-        keydown = int(np.random.normal(60, 10))
+    # Keydown overlap
+    keydown = int(np.random.normal(85, 20))
+    if is_cheater:
+        keydown = int(np.random.normal(75, 25))
 
-        iki_mean = abs(np.random.normal(110, 25))
-        iki_std = abs(np.random.normal(12, 5))  # robotic typing = low variance
+    # IKIs
+    iki_mean = abs(np.random.normal(170, 50))
+    if is_cheater:
+        iki_mean = abs(np.random.normal(140, 60))
 
-        event_rate = mouse + keydown + paste + copy
-        event_rate = event_rate / 10.0
+    iki_std = abs(np.random.normal(35, 12))
+    if is_cheater:
+        iki_std = abs(np.random.normal(25, 15))
 
-    else:
-        paste = np.random.poisson(0.1)
-        copy = np.random.poisson(0.2)
-        right = np.random.poisson(0.1)
-        tab = np.random.poisson(0.05)
-        selection = np.random.poisson(1)
+    # Event rate
+    event_rate = (mouse + keydown) / 10.0
+    event_rate += np.random.normal(0, 1.0)
 
-        mouse = int(np.random.normal(120, 20))
-        keydown = int(np.random.normal(90, 15))
-
-        iki_mean = abs(np.random.normal(180, 40))
-        iki_std = abs(np.random.normal(40, 10))  # human typing variance is higher
-
-        event_rate = mouse + keydown
-        event_rate = event_rate / 10.0
+    # Random anomalies
+    if random.random() < 0.07:
+        paste += 2
+    if random.random() < 0.07:
+        tab += 1
 
     return [
         paste,
@@ -79,14 +86,17 @@ def generate_sample(is_cheater):
         event_rate
     ]
 
-# Generate final dataset
-N = 2500   # total rows
+# ============================================================
+#  DATASET CREATION
+# ============================================================
+
+N = 4000
 cheat_fraction = 0.35
 
 rows = []
 labels = []
 
-for i in range(N):
+for _ in range(N):
     is_cheater = (random.random() < cheat_fraction)
     rows.append(generate_sample(is_cheater))
     labels.append(1 if is_cheater else 0)
@@ -98,7 +108,7 @@ df.to_csv("synthetic_dataset.csv", index=False)
 print("[INFO] Synthetic dataset written to synthetic_dataset.csv")
 
 # ============================================================
-#  TRAINING
+#  TRAINING — RANDOM FOREST
 # ============================================================
 
 X = df[FEATURE_COLUMNS]
@@ -108,13 +118,18 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=42, stratify=y
 )
 
-model = LogisticRegression(max_iter=200)
+model = RandomForestClassifier(
+    n_estimators=150,
+    max_depth=6,
+    min_samples_leaf=3,
+    random_state=42
+)
+
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 print("\n[INFO] Classification report on synthetic data:")
 print(classification_report(y_test, y_pred, digits=4))
 
-# Save the trained model
 joblib.dump(model, "model.pkl")
 print("[INFO] model.pkl saved successfully.")
