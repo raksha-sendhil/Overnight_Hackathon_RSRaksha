@@ -5,13 +5,11 @@ The system does not use webcam, microphone, or screen recording.
 It relies only on browser interaction patterns to estimate a real-time risk score.
 
 ## Core Features
-- Detects text selection attempts
-- Detects paste events and insert-from-paste actions
-- Detects right-click or context-menu attempts
+- Test Platform with disabled copy-paste and right click functionality
 - Detects tab switching and window visibility changes
 - Captures cursor movement patterns and drag behaviour
 - Tracks keystroke timing (inter-key intervals and bursts)
-- Computes a live cheating-risk score (0–100)
+- Computes a cheating-risk score (0–100)
 - Displays score and recent events on a proctor dashboard
 
 ## System Components
